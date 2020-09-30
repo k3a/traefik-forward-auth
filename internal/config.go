@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"regexp"
 	"strconv"
@@ -38,6 +39,7 @@ type Config struct {
 	Config                  func(s string) error `long:"config" env:"CONFIG" description:"Path to config file" json:"-"`
 	CookieDomains           []CookieDomain       `long:"cookie-domain" env:"COOKIE_DOMAIN" description:"Domain to set auth cookie on, can be set multiple times"`
 	InsecureCookie          bool                 `long:"insecure-cookie" env:"INSECURE_COOKIE" description:"Use insecure cookies"`
+	CookieSameSite          string               `long:"cookie-samesite" env:"COOKIE_SAMESITE" default:"Lax" description:"Cookie SameSite policy"`
 	CookieName              string               `long:"cookie-name" env:"COOKIE_NAME" default:"_forward_auth" description:"ID Cookie Name"`
 	EmailHeaderNames        CommaSeparatedList   `long:"email-header-names" env:"EMAIL_HEADER_NAMES" default:"X-Forwarded-User" description:"Response headers containing the authenticated user's username"`
 	UserCookieName          string               `long:"user-cookie-name" env:"USER_COOKIE_NAME" default:"_forward_auth_name" description:"User Cookie Name"`
@@ -67,6 +69,7 @@ type Config struct {
 	OIDCProvider        *oidc.Provider
 	Lifetime            time.Duration
 	ServiceAccountToken string
+	CookieSameSiteValue http.SameSite
 }
 
 // NewConfig loads config from provided args or uses os.Args if nil
@@ -216,6 +219,17 @@ func (c *Config) Validate() {
 	}
 
 	c.Lifetime = time.Second * time.Duration(c.LifetimeString)
+
+	switch strings.ToLower(c.CookieSameSite) {
+	case "lax":
+		c.CookieSameSiteValue = http.SameSiteLaxMode
+	case "strict":
+		c.CookieSameSiteValue = http.SameSiteStrictMode
+	case "none":
+		c.CookieSameSiteValue = http.SameSiteNoneMode
+	default:
+		c.CookieSameSiteValue = http.SameSiteDefaultMode
+	}
 
 	// get service account token
 	if c.EnableImpersonation {

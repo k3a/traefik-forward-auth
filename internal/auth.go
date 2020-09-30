@@ -133,6 +133,7 @@ func makeSessionCookie(r *http.Request, config *Config, data sessionCookie) *htt
 		Domain:   cookieDomain(r, config.CookieDomains),
 		HttpOnly: true,
 		Secure:   !config.InsecureCookie,
+		SameSite: config.CookieSameSiteValue,
 		Expires:  config.CookieExpiry(),
 	}
 }
